@@ -1,10 +1,15 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "caesium",
-  "version": "0.1.0",
+  "version": "../package.json",
   "identifier": "com.caesium.app",
+  "plugins": {
+    "sql": {
+      "preload": ["sqlite:epub-reader.db"]
+    }
+  },
   "build": {
-    "beforeDevCommand": "pnpm dev",
+    "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "pnpm build",
     "frontendDist": "../dist"
@@ -12,13 +17,38 @@
   "app": {
     "windows": [
       {
-        "title": "Caesium",
+        "fullscreen": false,
+        "height": 600,
+        "resizable": true,
+        "title": "Caseium",
         "width": 800,
-        "height": 600
+        "titleBarStyle": "Transparent",
+        "browserExtensionsEnabled": false,
+        "dragDropEnabled": true,
+        "decorations": true,
+        "transparent": true,
+        "additionalBrowserArgs": "--flag-switches-begin --enable-smooth-scrolling --enable-features=msWebView2EnableDraggableRegions,WebRtcHideLocalIpsWithMdns,msRefreshRateBoostOnScroll --disable-features=ElasticOverscroll,msWebOOUI,msPdfOOUI,msSmartScreenProtection,msPhoenixShowContainersInEdge --flag-switches-end"
       }
     ],
     "security": {
-      "csp": null
+      "csp": {
+        "default-src": "'self' blob: data: customprotocol: asset: http://asset.localhost ipc: http://ipc.localhost",
+        "connect-src": "'self' blob: data: asset: http://asset.localhost ipc: http://ipc.localhost",
+        "font-src": "'self' blob: data: asset: http://asset.localhost tauri: https://fonts.gstatic.com",
+        "img-src": "'self' asset: http://asset.localhost https://* blob: data:",
+        "style-src": "'unsafe-inline' 'self' http://asset.localhost https://fonts.googleapis.com"
+      },
+      "assetProtocol": {
+        "enable": true,
+        "scope": {
+          "allow": [
+            "$RESOURCE/**",
+            "$APPDATA/**/*",
+            "$TEMP/**/*"
+          ],
+          "deny": []
+        }
+      } 
     }
   },
   "bundle": {
@@ -30,6 +60,51 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
+    ],
+    "resources": [],
+    "windows": {
+      "allowDowngrades": true,
+      "certificateThumbprint": null,
+      "digestAlgorithm": null,
+      "nsis": null,
+      "signCommand": null,
+      "timestampUrl": null,
+      "tsp": false,
+      "webviewInstallMode": {
+        "silent": true,
+        "type": "downloadBootstrapper"
+      },
+      "wix": null
+    },
+    "macOS": {
+      "minimumSystemVersion": "10.13"
+    },
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": false,
+        "files": {}
+      },
+      "deb": {
+        "section": "text",
+        "files": {}
+      },
+      "rpm": {
+        "epoch": 0,
+        "files": {},
+        "release": "1"
+      }
+    },
+    "android": {
+      "minSdkVersion": 26
+    },
+    "fileAssociations": [
+      {
+        "name": "epub",
+        "ext": ["epub"],
+        "description": "EPUB file",
+        "mimeType": "application/epub+zip"
+      }
     ]
   }
 }
+
