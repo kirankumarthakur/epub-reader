@@ -2,9 +2,8 @@ import { useState, useEffect, useRef } from "react"
 import "./App.css"
 import { invoke } from "@tauri-apps/api/core"
 import { open } from "@tauri-apps/plugin-dialog"
-import { Box, Button, Center, CloseButton, Dialog, Drawer, Flex, For, Heading, Input, Kbd, Link, Popover, Portal, Stack, Text} from "@chakra-ui/react"
+import { Box, Button, CloseButton, Dialog, Drawer, Flex, For, Heading, Input, Kbd, Link, Popover, Portal, Stack, Text} from "@chakra-ui/react"
 import { Global } from "@emotion/react"
-import { useSwipeable } from "react-swipeable"
 
 type epubBook = {
   book_url: string
@@ -139,53 +138,41 @@ const App = () => {
       const target = event.target as HTMLElement
       if (target.tagName === 'A') {
         const href = (target as HTMLAnchorElement).href
-        console.log(href)
         const parsed = new URL(href)
         const idref = parsed.pathname.substring(1)
         event.preventDefault()
         const page = await invoke<number>('get_page_from_idref', { idref })
-        goToPage(page);
-      }
-    };
-
-    const handleKey = (event: KeyboardEvent) => {
-      const tag = (event.target as HTMLElement).tagName.toLowerCase();
-
-      if (tag === 'input' || tag === 'textarea') return;
-      const key = event.key.toLowerCase();
-
-      const current_page = currentPageRef.current
-      console.log(current_page)
-      if (key === 'arrowleft' || key === 'p') {
-        goToPage(current_page - 1)
-      } else if (key === 'arrowright' || key === 'n') {
-        goToPage(current_page + 1)
-      } else if (key === 't') {
-        const tocButton = document.getElementById('toc-button');
-        if (tocButton) {
-          tocButton.click(); 
-        }
-      } else if (key == 'i') {
-        const importbutton = document.getElementById('import-button');
-        if (importbutton) {
-          importbutton.click(); 
-        }
-      } else if (key == 'j') {
-        const jumpbutton = document.getElementById('jump-button');
-        if (jumpbutton) {
-          jumpbutton.click(); 
-        }
+        goToPage(page)
       }
     }
 
-    document.addEventListener('click', handleClick);
-    document.addEventListener('keydown', handleKey);
+    const handleKey = (event: KeyboardEvent) => {
+      const tag = document.activeElement?.tagName.toLowerCase();
+      if (tag === 'input' || tag === 'textarea') return
+
+      const key = event.key.toLowerCase()
+
+      if (key === 'arrowleft' || key === 'p') {
+        document.getElementById('prev-button')?.click()
+      } else if (key === 'arrowright' || key === 'n') {
+        document.getElementById('next-button')?.click()
+      } else if (key === 't') {
+        document.getElementById('toc-button')?.click()
+      } else if (key === 'i') {
+        document.getElementById('import-button')?.click()
+      } else if (key === 'j') {
+        document.getElementById('jump-button')?.click()
+      }
+    }
+
+    document.addEventListener('click', handleClick)
+    document.addEventListener('keydown', handleKey)
 
     return () => {
-      document.removeEventListener('click', handleClick);
-      document.removeEventListener('keydown', handleKey);
-    };
-  }, []);
+      document.removeEventListener('click', handleClick)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [])
 
   const GlobalEPUBStyles = () => (
     <Global
@@ -263,14 +250,7 @@ const App = () => {
         },
       }}
     />
-  );
-
-  const handlers = useSwipeable({
-    onSwipedLeft: () => goToPage((book?.current_page ?? 1) + 1),
-    onSwipedRight: () => goToPage((book?.current_page ?? 1) - 1),
-    trackTouch: true,
-    trackMouse: true
-  })
+  )
 
   return (
     <div>
@@ -313,7 +293,7 @@ const App = () => {
           Import Book 
         </Button>
 
-        <Drawer.Root>
+        <Drawer.Root lazyMount unmountOnExit>
           <Drawer.Trigger asChild>
             <Button colorPalette="teal" variant="outline" size="sm" id="toc-button">
               <Kbd variant="outline">T</Kbd>
@@ -377,25 +357,45 @@ const App = () => {
             {book ? (
               <>
                 <Flex direction="column" mb={4} alignItems='center'>
-                  <Heading as="h2" size="md" mb={2}>
+                  <Heading as="h2" size="lg" mb={2}>
                     {book.title}
                   </Heading>
-                  <Text fontSize="sm" color="gray.400">
+
+                <Text fontSize="sm" color="gray.400">
+                  Page {book.current_page} of {book.total_pages} ({(book.current_page * 100 / book.total_pages).toFixed(2)} %)
+                </Text>
+
+                <Stack direction='row'>
+                  <Button colorPalette='gray' variant='plain' size='sm' id='prev-button' onClick={() => {
+                    const page = Math.max(1, Math.min(currentPageRef.current - 1, book?.total_pages ?? 1));
+                    goToPage(page);
+                  }} >
+                    <Kbd variant="outline">←</Kbd>   
                     <Kbd variant="outline">P</Kbd>
-                    Page {book.current_page} of {book.total_pages}
+                    Prev 
+                  </Button>
+
+                  <Button colorPalette='gray' variant='plain' size='sm' id='next-button' onClick={() => {
+                    const page = Math.max(1, Math.min(currentPageRef.current + 1, book?.total_pages ?? 1));
+                    goToPage(page);
+                  }} >
+                    Next 
                     <Kbd variant="outline">N</Kbd>
-                  </Text>
+                    <Kbd variant="outline">→</Kbd>
+                  </Button>
+                </Stack>
+
                 </Flex>
 
-                <Box {...handlers} w="100%" h="100%">
-                <Box
-                  margin='5%'
-                  className='epub-content'
-                  dangerouslySetInnerHTML={{
-                    __html: currentContent?.content || "<p>No Content</p>",
-                  }}
-                />
-                </Box>
+                  <Box
+                    margin="5%"
+                    className="epub-content"
+                    dangerouslySetInnerHTML={{
+                      __html: currentContent?.content || "<p>No Content</p>",
+                    }}
+                  />
+
+
             </>
             ) : (
               <Text>No book loaded.</Text>
